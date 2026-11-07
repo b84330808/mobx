@@ -763,6 +763,62 @@ results of this test:
         )
         t.end()
     })
+
+    test("Map: iterating", function (t) {
+        gc()
+        const iterationsCount = 100
+        const propertiesCount = 10000
+        const map = mobx.observable.map()
+        let p
+        for (p = 0; p < propertiesCount; p++) {
+            map.set("" + p, p)
+        }
+
+        let sum = 0
+        let start = Date.now()
+        for (let i = 0; i < iterationsCount; i++) {
+            for (const value of map.values()) {
+                sum += value
+            }
+        }
+        log(
+            "Iterating " +
+                propertiesCount +
+                " map properties " +
+                iterationsCount +
+                " times: " +
+                (Date.now() - start) +
+                " ms."
+        )
+
+        start = Date.now()
+        const dispose = mobx.autorun(() => {
+            for (const value of map.values()) {
+                sum += value
+            }
+        })
+        const created = Date.now() - start
+        start = Date.now()
+        for (let i = 0; i < iterationsCount; i++) {
+            map.set("0", i)
+        }
+        const updated = Date.now() - start
+        start = Date.now()
+        dispose()
+        log(
+            "Iterating " +
+                propertiesCount +
+                " map properties in a reaction - Started/Updated/Disposed in " +
+                created +
+                "/" +
+                updated +
+                "/" +
+                (Date.now() - start) +
+                " ms."
+        )
+        t.ok(sum > 0)
+        t.end()
+    })
 }
 
 function now() {

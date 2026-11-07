@@ -294,6 +294,15 @@ export class ObservableMap<K = any, V = any>
         return this.get(key)!
     }
 
+    /**
+     * Value of a key that keys() just returned. keys() tracks keysAtom_, which
+     * changes on every addition and deletion, so unlike get() this doesn't need
+     * a has() dependency for each key.
+     */
+    private getIterated_(key: K): V {
+        return this.dehanceValue_(this.data_.get(key)?.get()) as V
+    }
+
     private dehanceValue_<X extends V | undefined>(value: X): X {
         if (this.dehancer !== undefined) {
             return this.dehancer(value)
@@ -314,7 +323,7 @@ export class ObservableMap<K = any, V = any>
                 const { done, value } = keys.next()
                 return {
                     done,
-                    value: done ? (undefined as any) : self.get(value)
+                    value: done ? (undefined as any) : self.getIterated_(value)
                 }
             }
         })
@@ -328,7 +337,7 @@ export class ObservableMap<K = any, V = any>
                 const { done, value } = keys.next()
                 return {
                     done,
-                    value: done ? (undefined as any) : ([value, self.get(value)!] as [K, V])
+                    value: done ? (undefined as any) : ([value, self.getIterated_(value)] as [K, V])
                 }
             }
         })

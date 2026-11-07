@@ -924,6 +924,40 @@ test("can iterate map - values", () => {
     d()
 })
 
+test("iterating a map tracks keys() and the values, without a has() per key", () => {
+    const x = mobx.observable.map({ a: 1, b: 2 })
+    const seen = []
+    const d = mobx.autorun(() => seen.push(iteratorToArray(x.values())))
+    expect(mobx.getDependencyTree(d).dependencies.length).toBe(3)
+
+    x.set("a", 10)
+    x.delete("a")
+    x.set("a", 1)
+    x.replace({ c: 3 })
+    x.set("c", undefined)
+    x.delete("c")
+    expect(seen).toEqual([[1, 2], [10, 2], [2], [2, 1], [3], [undefined], []])
+    d()
+})
+
+test("a map iterator keeps going when replace and delete run during the iteration", () => {
+    const x = mobx.observable.map({ a: 1, b: 2, c: 3 })
+    const seen = []
+    for (const entry of x) {
+        seen.push(entry)
+        if (entry[0] === "a") {
+            // replace swaps the backing Map, the iterator stays on the old one
+            x.replace({ a: 1, b: 2, c: 3 })
+            x.delete("c")
+        }
+    }
+    expect(seen).toEqual([
+        ["a", 1],
+        ["b", 2],
+        ["c", undefined]
+    ])
+})
+
 test("NaN as map key", function () {
     const a = map(new Map([[NaN, 0]]))
     expect(a.has(NaN)).toBe(true)
